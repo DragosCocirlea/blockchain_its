@@ -1,0 +1,92 @@
+To change logging use the env variable IPFS_LOGGING (by default it's set to info)
+	export IPFS_LOGGING=debug
+	export IPFS_LOGGING=info
+
+Idei (speed blockchain):
+	- fiecare region node are asignat o "regiune" astfel incat oricare doua regiuni sa nu se suprapuna 
+	- fiecare region node trimite master node-ului tranzactiile pe care le-a create pe baza datelor primite
+de la utilizatori - la fiecare 15 secunde
+	- master node-ul pune cap la cap tranzactiile primite, creand astfel un nou block pe care il
+adauga la blockchain si pe care trimite tuturor region node-urilor , astfel incat acestea sa isi
+poata updata blockchain-ul intern
+		-> astfel se asigura faptul ca mesajele sunt de dimensiune minima:
+			- region -> master: tranzactiile noi
+			- master -> region: block-ul abia creat
+
+	- pentru master node nu conteaza de la cine a primit tranzactiile deoarece stie ca au fost validate
+de region node-uri
+
+
+Master node primeste de la region node:
+	txsReceived = [(42.712324, 27.123438, 102)]
+	readRegionNodeData()
+		-> newTx = [(45.689717, 27.194274, 44), (45.689611, 27.194066, 45)]
+		-> txsReceived = [(42.712324, 27.123438, 102), (45.689717, 27.194274, 44), (45.689611, 27.194066, 45)]
+
+https://medium.com/@pinkudebnath/head-first-into-sync-cond-of-golang-be71779699b1
+
+Pentru reputatia userilor:
+	- in blocuri se va tine doar diferenta dintre reputatia veche si cea noua
+	- astfel se poate vedea clar cand si cum s-a schimbat
+	- e nevoie de o parcurgere initiala a blockchain-ului pentru a calcula reputatia unui user
+
+Am eliminat partea cu secio intrucat "secure input output" este enabled by default in libp2p si vrem asta mereu
+
+Consensus: kinda like Practical Byzantine Fault Tolerance
+	- master node si region nodes sunt trusted
+	- majoritatea user nodes sunt trusted
+	- region nodes realizeaza consensul datelor primite de la users pe baza reputatiei acestora
+	
+
+TODO:
+	✘ soft close each node, without closing other nondependant nodes (golang defer ctrl c?) 
+	
+	✔ implement the alert message type (car crash, pothole, roadkill...)
+		- un user poate sa creeze noi alerte (coordonate, tip alerta) sau sa raspunda la o alerta deja creata (acelasi mesaj)
+			- mesajul contine coordonatele, tipul de alerta si daca alerta exista sau nu
+		- se adauga sau se updateaza in cadrul sistemului, modificand numarul de confirmari/infirmari
+		- acestea sunt propagate la master node de fiecare data cand se modifica ceva in cadrul unei alerte (nr confirmari/infirmari si dezactivare)
+		- alertele pot deveni inactive in mai multe cazuri:
+			- daca dupa o perioada de timp, sunt mai multe raspunsuri ce infirma alerta decat cele care o confirma
+			- aceasta verificare se va face periodic
+		- un utilizator va putea vota doar cand este in proximitatea unei alerte (daca incearca sa voteze de mai departe, votul nu e luat in considerare)
+
+	✔ implement parseUserReports() in the region node the way it should be
+		- reputatia intre 0 si 1
+		- initial este .42
+		- reputatia se poate modifica astfel pe baza valorii repChange = (goodAns - wrongAns) / nrAns * 1% => repChange apartine [-1%, 1%]
+			- daca repChange >0 si daca currentRep > 0.5, atunci deltaRep = repChange * (1 - currentRep)
+			- altfel deltaRep = repChange * currentRep
+			ex: currentRep 0.42, 3 raspunsuri, 1 bun, 2 gresite -> repChange = (1 - 2) / 3 * 1% = -0.333% * 0.42 = -0.0014
+			ex: currentRep 0.42, 3 raspunsuri, 2 bune, 1 gresit -> repChange = (2 - 1) / 3 * 1% = 0.333% * 0.42 = 0.0014
+			ex: currentRep 0.99, 3 raspunsuri, 2 bune, 1 gresit -> repChange = (2 - 1) / 3 * 1% = 0.333% * (1 - 0.99) = 0.000033
+			ex: currentRep 0.1, 3 raspunsuri, 2 bune, 1 gresit -> repChange = (2 - 1) / 3 * 1% = 0.333% - 0.1 = 0.000333
+			(fara conditia currentRep > 0.5 poate aparea urm caz): currentRep 0.1, 3 raspunsuri, 2 bune, 1 gresit -> repChange = (2 - 1) / 3 * 1% = 0.333% * (1 - 0.1) = 0.003
+					-> de 10 ori mai mult decat in noul caz
+					-> dublu fata de un user cu reputatie de 4 ori mai mare, not ok
+			- in acest mod reputatia nu iese din intervalul [0, 1]:
+				- 99.999999999999 * ((100 - 99.999999999999 ) / 100) = 9.9475983e-13
+				- 99.99999999999999 * ((100 - 99.99999999999999 ) / 100) = 0 -> de la un punct reputatia nu mai poate sa creasca
+		- viteza rezultata din rapoarte:
+			speed_sum = 0
+			rep_sum = 0
+			for (speed, user) in reportsRecv:
+				speed_sum += speed * user.reputation
+				rep_sum += user.reputation
+			speed = speed_sum / rep_sum
+		- un raspuns are o toleranta de 20%, astfel daca viteza rezultata un loc este x km/h,
+		orice raport din intervalul [80% * x, 120% * x] este considerat "goodAns"
+
+	✘ implementare directie
+		- pe langa coordonatele clasice, userii vor mai trimite o a treia valoare: unghiul fata de dreapta ce trece prin locatia utilizatorului si polul nord - https://i.redd.it/uyelaw8dbhjz.png
+		- se aplica k-means pentru a detecta care sunt cele doua directii
+		- daca cele doua directii rezultate sunt apropiate, inseamna fie ca strada este cu sens unic, fie ca pe un sens nu circula nimeni
+
+	✔ alta implementare directie
+		- detectarea directiei pe baza pozitiei precedente
+			
+	✔ in calculateHash() -> Collect all keys, sort them and iterate the map by key (Go maps do not maintain the insertion order)
+
+
+Pentru lucrarea scrisa:
+	- impleme fizica: sa foloseasca un sistem precum 112 in care datele sunt transimse indiferent de carrier
