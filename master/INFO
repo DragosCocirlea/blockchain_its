@@ -47,8 +47,8 @@ TODO:
 		- se adauga sau se updateaza in cadrul sistemului, modificand numarul de confirmari/infirmari
 		- acestea sunt propagate la master node de fiecare data cand se modifica ceva in cadrul unei alerte (nr confirmari/infirmari si dezactivare)
 		- alertele pot deveni inactive in mai multe cazuri:
-			- daca dupa o perioada de timp, sunt mai multe raspunsuri ce infirma alerta decat cele care o confirma
-			- aceasta verificare se va face periodic
+			- daca dupa o perioada de timp, sunt mai multe raspunsuri ce infirma alerta decat cele care o confirma, verificare ce sa face periodic
+			- daca nu a mai primit nicio confirmare timp de o ora
 		- un utilizator va putea vota doar cand este in proximitatea unei alerte (daca incearca sa voteze de mai departe, votul nu e luat in considerare)
 
 	✔ implement parseUserReports() in the region node the way it should be
@@ -75,7 +75,7 @@ TODO:
 				rep_sum += user.reputation
 			speed = speed_sum / rep_sum
 		- un raspuns are o toleranta de 20%, astfel daca viteza rezultata un loc este x km/h,
-		orice raport din intervalul [80% * x, 120% * x] este considerat "goodAns"
+		orice raport din intervalul [80% * x, 120% * x] este considerat corect
 
 	✘ implementare directie
 		- pe langa coordonatele clasice, userii vor mai trimite o a treia valoare: unghiul fata de dreapta ce trece prin locatia utilizatorului si polul nord - https://i.redd.it/uyelaw8dbhjz.png
