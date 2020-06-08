@@ -57,11 +57,33 @@ func calculateHash(block ITSBlock) string {
 	// block to string
 	record := strconv.Itoa(block.Index) + block.Timestamp + block.PrevHash
 
+	var speedReportsString, alertsString, reputationChangesString string
+
+	var wg sync.WaitGroup
+	wg.Add(3)
+	go speedReportsWorker(&wg, &speedReportsString, block.Data.SpeedReports)
+	go alertsWorker(&wg, &alertsString, block.Data.Alerts)
+	go reputationChangesWorker(&wg, &reputationChangesString, block.Data.UsersReputation)
+	wg.Wait()
+
+	record += speedReportsString + alertsString + reputationChangesString
+
+	h := sha256.New()
+	h.Write([]byte(record))
+	hashed := h.Sum(nil)
+
+	return hex.EncodeToString(hashed)
+}
+
+func speedReportsWorker(wg *sync.WaitGroup, str *string, blockSpeedReports map[GeoPoint]map[FloatString]float64) {
+	defer wg.Done()
+
 	// Collect all speed reports coords
 	coords := make([]GeoPoint, 0)
-	for k := range block.Data.SpeedReports {
+	for k := range blockSpeedReports {
 		coords = append(coords, k)
 	}
+
 	// sort the speed report by coords
 	sort.Slice(coords, func(i, j int) bool {
 		if coords[i].Lat != coords[j].Lat {
@@ -69,10 +91,11 @@ func calculateHash(block ITSBlock) string {
 		}
 		return coords[i].Long < coords[j].Long
 	})
+
 	// iterate the map by key (Go maps do not maintain the insertion order)
 	for _, coord := range coords {
-		speeds := block.Data.SpeedReports[coord]
-		record = record + floatToString(coord.Lat) + " " + floatToString(coord.Long) + ": "
+		speeds := blockSpeedReports[coord]
+		*str = *str + floatToString(coord.Lat) + " " + floatToString(coord.Long) + ": "
 
 		// collect bearings in this geopoint
 		bearings := make([]float64, 0)
@@ -81,15 +104,20 @@ func calculateHash(block ITSBlock) string {
 		}
 		// sort
 		sort.Float64s(bearings)
+
 		// iterate
 		for _, bearing := range bearings {
-			record = record + floatToString(bearing) + " - " + floatToString(speeds[FloatString(bearing)]) + ". "
+			*str = *str + floatToString(bearing) + " - " + floatToString(speeds[FloatString(bearing)]) + ". "
 		}
 	}
+}
+
+func alertsWorker(wg *sync.WaitGroup, str *string, blockAlerts map[Alert]AlertData) {
+	defer wg.Done()
 
 	// Collect all alert keys
 	alerts := make([]Alert, 0)
-	for k := range block.Data.Alerts {
+	for k := range blockAlerts {
 		alerts = append(alerts, k)
 	}
 	// sort
@@ -104,31 +132,29 @@ func calculateHash(block ITSBlock) string {
 	})
 	// iterate
 	for _, alert := range alerts {
-		ans := block.Data.Alerts[alert]
-		record = record + floatToString(alert.Coord.Lat) + " " + floatToString(alert.Coord.Long) + " " + strconv.Itoa(alert.AlertType) + " - " +
+		ans := blockAlerts[alert]
+		*str = *str + floatToString(alert.Coord.Lat) + " " + floatToString(alert.Coord.Long) + " " + strconv.Itoa(alert.AlertType) + " - " +
 			strconv.FormatBool(ans.Active) + ", " + strconv.FormatBool(ans.Verified) + ", " +
 			floatToString(ans.Confirmations) + ", " + floatToString(ans.Denies) + ", " +
 			ans.Creation.String() + ", " + ans.LatestConfirmation.String() + "; "
 	}
+}
+
+func reputationChangesWorker(wg *sync.WaitGroup, str *string, blockReputationChanges map[string]float64) {
+	defer wg.Done()
 
 	// Collect all reputation user ids and sort them
 	ids := make([]string, 0)
-	for k := range block.Data.UsersReputation {
+	for k := range blockReputationChanges {
 		ids = append(ids, k)
 	}
 	//sort
 	sort.Strings(ids)
 	//iterate
 	for _, id := range ids {
-		rep := block.Data.UsersReputation[id]
-		record = record + "{" + id + "} - " + floatToString(rep) + ", "
+		rep := blockReputationChanges[id]
+		*str = *str + "{" + id + "} - " + floatToString(rep) + ", "
 	}
-
-	h := sha256.New()
-	h.Write([]byte(record))
-	hashed := h.Sum(nil)
-
-	return hex.EncodeToString(hashed)
 }
 
 // create a new block using previous block's hash
