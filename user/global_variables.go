@@ -31,7 +31,7 @@ func initVariables() {
 	alertsMutex = sync.Mutex{}
 
 	currentLocation = GeoPoint{45, 27}
-	directionLat = 1
+	directionLat = 0.003
 	directionLong = 0
 	ticks = 1
 	currentTick = 0

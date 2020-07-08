@@ -131,7 +131,7 @@ func readBlockchainUpdate(masterRW *bufio.ReadWriter) {
 
 func sendMasterTransaction(masterRW *bufio.ReadWriter) {
 	for {
-		time.Sleep(15 * time.Second)
+		time.Sleep(10 * time.Second)
 
 		// only generate a new transaction if there are new speed messages from users
 		if len(speedUserMessages) != 0 {

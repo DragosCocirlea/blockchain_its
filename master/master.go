@@ -37,7 +37,7 @@ func main() {
 func updateBlockchain() {
 	for {
 		// wait a period of time
-		time.Sleep(15 * time.Second)
+		time.Sleep(10 * time.Second)
 
 		// block any transactions from being added
 		speedReportsMutex.Lock()

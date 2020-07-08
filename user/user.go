@@ -11,6 +11,7 @@ func main() {
 	listenPort := flag.Int("port", 0, "wait for incoming connections")
 	target := flag.String("peer", "", "target peer to dial")
 	seed := flag.Int64("seed", 0, "set random seed for id generation")
+	way := flag.String("way", "", "")
 	flag.Parse()
 
 	if *listenPort == 0 {
@@ -21,7 +22,9 @@ func main() {
 	}
 
 	initVariables()
-	readSpeedFile()
+	if *way != "" {
+		directionLat *= -1
+	}
 
 	// Make a host that listens on the given multiaddress
 	ha, err := makeUserHost(*listenPort, *target, *seed)
@@ -51,8 +54,4 @@ func checkErrorFatal(err error) {
 	if err != nil {
 		log.Fatal(err)
 	}
-}
-
-func readSpeedFile() {
-
 }

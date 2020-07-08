@@ -87,9 +87,9 @@ func chooseExistingAlert(stdReader *bufio.Reader) (AlertMessageUserToRegion, err
 
 	distance := location.distanceTo(alert.Coord)
 	if distance > 1000 {
-		fmt.Println("The distance between you and the alert cannot be greated than 1km")
-		err := errors.New("Alert too far away")
-		return AlertMessageUserToRegion{}, err
+		fmt.Println("The distance between you and the alert cannot be greater than 1km")
+		// err := errors.New("Alert too far away")
+		// return AlertMessageUserToRegion{}, err
 	}
 
 	// check if the alert is still active

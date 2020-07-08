@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"sort"
 	"strconv"
+	"sync"
 )
 
 // ITSBlockchain is a series of validated Blocks

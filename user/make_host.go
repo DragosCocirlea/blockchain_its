@@ -41,7 +41,7 @@ func makeUserHost(listenPort int, target string, randseed int64) (host.Host, err
 	}
 
 	fmt.Printf("I am user node %s\n", basicHost.ID().Pretty())
-	fmt.Printf("\nNow run this on a different terminal in the user directory in order to connect to the same region node:\ngo run *.go -port %d -peer %s\n\n", listenPort+1, target)
+	fmt.Printf("\nNow run this on a different terminal in the user directory in order to connect to the same region node:\ngo run *.go -port %d -peer %s -way x\n\n", listenPort+1, target)
 
 	return basicHost, nil
 }

@@ -18,8 +18,9 @@ func sendUserID(regionRW *bufio.ReadWriter, userID string) {
 
 func sendRegionSpeedMessage(regionSpeedRW *bufio.ReadWriter) {
 	for {
-		time.Sleep(15 * time.Second)
+		time.Sleep(10 * time.Second)
 
+		// create random speed between 90 and 110
 		rand.Seed(time.Now().UnixNano())
 		min := -10
 		max := 10
